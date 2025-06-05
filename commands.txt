@@ -1,0 +1,3 @@
+start the process with
+
+tdl training run
