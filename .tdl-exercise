@@ -1,4 +1,4 @@
-exercise_id = "00ff20b3-d41a-4a5a-b461-7685049102a8"
-directory = "02-async/02-introducing-the-project"
-is_text_only = true
+exercise_id = "b5b12f1d-9e05-4709-8110-336cfb54f635"
+directory = "03-message-broker/02-publishing-messages"
+is_text_only = false
 is_optional = false
