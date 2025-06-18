@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"tickets/worker"
+	"tickets/message"
 )
 
 type SpreadsheetsAPI interface {
@@ -14,5 +14,5 @@ type ReceiptsService interface {
 }
 
 type Handler struct {
-	workAgent *worker.Worker
+	pubSub *message.PubSub
 }

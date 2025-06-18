@@ -1,19 +1,19 @@
 package http
 
 import (
-	"tickets/worker"
+	"tickets/message"
 
 	libHttp "github.com/ThreeDotsLabs/go-event-driven/v2/common/http"
 	"github.com/labstack/echo/v4"
 )
 
 func NewHttpRouter(
-	workAgent *worker.Worker,
+	pubSub *message.PubSub,
 ) *echo.Echo {
 	e := libHttp.NewEcho()
 
 	handler := Handler{
-		workAgent: workAgent,
+		pubSub: pubSub,
 	}
 
 	e.POST("/tickets-confirmation", handler.PostTicketsConfirmation)
