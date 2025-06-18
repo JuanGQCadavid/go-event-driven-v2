@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	ticketsHttp "tickets/http"
+	"tickets/message"
 	"tickets/worker"
 )
 
@@ -21,10 +22,13 @@ func New(
 ) Service {
 
 	// Initialazing and starting worker
-	var workerAgent = worker.NewWorker(spreadsheetsAPI, receiptsService)
-	go workerAgent.Run(context.Background())
+	var pubSub *message.PubSub = message.NewPubSub()
 
-	echoRouter := ticketsHttp.NewHttpRouter(workerAgent)
+	var workerAgent = worker.NewWorker(spreadsheetsAPI, receiptsService, pubSub)
+	workerAgent.Init()
+	// go workerAgent.Run(context.Background())
+
+	echoRouter := ticketsHttp.NewHttpRouter(pubSub)
 
 	return Service{
 		echoRouter: echoRouter,

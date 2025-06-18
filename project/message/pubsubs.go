@@ -1,6 +1,7 @@
 package message
 
 import (
+	"context"
 	"os"
 
 	"github.com/ThreeDotsLabs/watermill"
@@ -31,6 +32,34 @@ func NewPubSub() *PubSub {
 		rdb:        rdb,
 		logger:     logger,
 		publishers: make(map[string]*redisstream.Publisher),
+	}
+}
+
+func (ps *PubSub) Subscribe(topic, group string, callback func(context.Context, string) error) {
+	sub, err := redisstream.NewSubscriber(redisstream.SubscriberConfig{
+		Client:        ps.rdb,
+		ConsumerGroup: group,
+	}, ps.logger)
+	if err != nil {
+		panic("Could not subscribe! " + err.Error())
+	}
+	go processMessages(topic, sub, callback)
+}
+
+func processMessages(topic string, sub message.Subscriber, action func(context.Context, string) error) {
+	messages, err := sub.Subscribe(context.Background(), topic)
+	if err != nil {
+		panic(err)
+	}
+
+	for msg := range messages {
+		orderID := string(msg.Payload)
+		err := action(msg.Context(), orderID)
+		if err != nil {
+			msg.Nack()
+		} else {
+			msg.Ack()
+		}
 	}
 }
 
