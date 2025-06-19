@@ -1,4 +1,4 @@
-exercise_id = "11b26cc6-6229-47df-b2b0-9d591ca4ca79"
-directory = "project"
-is_text_only = false
+exercise_id = "7d228c76-0935-4e91-ad42-eb8de3fa9c41"
+directory = "05-events/01-events"
+is_text_only = true
 is_optional = false

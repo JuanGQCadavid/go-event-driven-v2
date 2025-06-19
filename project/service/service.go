@@ -9,7 +9,6 @@ import (
 
 	ticketsHttp "tickets/http"
 	"tickets/message"
-	"tickets/worker"
 )
 
 type Service struct {
@@ -17,22 +16,17 @@ type Service struct {
 }
 
 func New(
-	spreadsheetsAPI ticketsHttp.SpreadsheetsAPI,
-	receiptsService ticketsHttp.ReceiptsService,
+	pubSub *message.PubSub,
 ) Service {
-
-	// Initialazing and starting worker
-	var pubSub *message.PubSub = message.NewPubSub()
-
-	var workerAgent = worker.NewWorker(spreadsheetsAPI, receiptsService, pubSub)
-	workerAgent.Init()
-	// go workerAgent.Run(context.Background())
-
 	echoRouter := ticketsHttp.NewHttpRouter(pubSub)
 
 	return Service{
 		echoRouter: echoRouter,
 	}
+}
+
+func (s Service) ShutDown(ctx context.Context) error {
+	return s.echoRouter.Shutdown(ctx)
 }
 
 func (s Service) Run(ctx context.Context) error {
