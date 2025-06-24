@@ -2,6 +2,8 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
+	"tickets/entities"
 	"tickets/message"
 )
 
@@ -31,7 +33,7 @@ type SpreadsheetsAPI interface {
 }
 
 type ReceiptsService interface {
-	IssueReceipt(ctx context.Context, ticketID string) error
+	IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) error
 }
 
 func NewWorker(
@@ -40,50 +42,60 @@ func NewWorker(
 	pubSub *message.PubSub,
 ) *Worker {
 	return &Worker{
-		// queue:           make(chan Message, 100),
 		spreadsheetsAPI: spreadsheetsAPI,
 		receiptsService: receiptsService,
 		pubSub:          pubSub,
 	}
 }
 
-// func (w *Worker) Send(msgs ...Message) {
-// 	for _, msg := range msgs {
-// 		w.queue <- msg
-// 	}
-// }
-
 func (w *Worker) Init() {
 
-	w.pubSub.Subscribe("issue-receipt", "issue-receipt", w.HandleReceipt)
-	w.pubSub.Subscribe("append-to-tracker", "append-to-tracker", w.HandleSpread)
+	w.pubSub.Subscribe("TicketBookingConfirmed", "issue-receipt", w.HandleReceipt)
+	w.pubSub.Subscribe("TicketBookingConfirmed", "append-to-tracker", w.HandleSpread)
+	w.pubSub.Subscribe("TicketBookingCanceled", "append-to-refund", w.HandleRefound)
+}
+func (w *Worker) castPaylaod(payload string) (*entities.TicketBookingConfirmed, error) {
+	var (
+		ticket *entities.TicketBookingConfirmed = &entities.TicketBookingConfirmed{}
+	)
+
+	if err := json.Unmarshal([]byte(payload), ticket); err != nil {
+		return nil, err
+	}
+
+	return ticket, nil
 }
 
 func (w *Worker) HandleReceipt(ctx context.Context, payload string) error {
-	return w.receiptsService.IssueReceipt(ctx, payload)
+
+	ticket, err := w.castPaylaod(payload)
+
+	if err != nil {
+		return err
+	}
+
+	return w.receiptsService.IssueReceipt(ctx, entities.IssueReceiptRequest{
+		TicketID: ticket.TicketID,
+		Price:    ticket.Price,
+	})
+}
+
+func (w *Worker) HandleRefound(ctx context.Context, payload string) error {
+	ticket, err := w.castPaylaod(payload)
+
+	if err != nil {
+		return err
+	}
+
+	return w.spreadsheetsAPI.AppendRow(ctx, "tickets-to-refund", []string{ticket.TicketID, ticket.CustomerEmail, ticket.Price.Amount, ticket.Price.Currency})
 }
 
 func (w *Worker) HandleSpread(ctx context.Context, payload string) error {
-	return w.spreadsheetsAPI.AppendRow(ctx, "tickets-to-print", []string{payload})
-}
+	ticket, err := w.castPaylaod(payload)
 
-// func (w *Worker) Run(ctx context.Context) {
-// 	for msg := range w.queue {
-// 		var err error = nil
-// 		switch msg.Task {
-// 		case TaskIssueReceipt:
-// 			err = w.receiptsService.IssueReceipt(ctx, msg.TicketID)
-// 			if err != nil {
-// 				slog.With("error", err).Error("failed to issue the receipt")
-// 			}
-// 		case TaskAppendToTracker:
-// 			err = w.spreadsheetsAPI.AppendRow(ctx, "tickets-to-print", []string{msg.TicketID})
-// 			if err != nil {
-// 				slog.With("error", err).Error("failed to append to tracker")
-// 			}
-// 		}
-// 		if err != nil {
-// 			w.Send(msg)
-// 		}
-// 	}
-// }
+	if err != nil {
+		return err
+	}
+
+	return w.spreadsheetsAPI.AppendRow(ctx, "tickets-to-print", []string{ticket.TicketID, ticket.CustomerEmail, ticket.Price.Amount, ticket.Price.Currency})
+}

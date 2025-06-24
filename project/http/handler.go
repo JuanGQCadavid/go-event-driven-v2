@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"tickets/entities"
 	"tickets/message"
 )
 
@@ -10,7 +11,7 @@ type SpreadsheetsAPI interface {
 }
 
 type ReceiptsService interface {
-	IssueReceipt(ctx context.Context, ticketID string) error
+	IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) error
 }
 
 type Handler struct {

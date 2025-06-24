@@ -41,22 +41,10 @@ func NewPubSub() *PubSub {
 
 func (ps *PubSub) Init(ctx context.Context) error {
 	return ps.router.Run(ctx)
-
-	// go func() {
-	// 	defer log.Println("Done")
-	// 	log.Println("Dude")
-	// 	if err := ps.router.Run(context.Background()); err != nil {
-	// 		panic(err.Error())
-	// 	}
-
-	// }()
 }
 
 func (ps *PubSub) WaitUntilReady() {
 	<-ps.router.Running()
-	// for !ps.router.IsRunning() {
-	// 	time.Sleep(10 * time.Millisecond)
-	// }
 }
 
 func (ps *PubSub) Subscribe(topic, group string, callback func(context.Context, string) error) {
@@ -82,25 +70,7 @@ func (ps *PubSub) Subscribe(topic, group string, callback func(context.Context, 
 	}
 	fmt.Println("Run handers done!")
 
-	// go processMessages(topic, sub, callback)
 }
-
-// func processMessages(topic string, sub message.Subscriber, action func(context.Context, string) error) {
-// 	messages, err := sub.Subscribe(context.Background(), topic)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	for msg := range messages {
-// 		orderID := string(msg.Payload)
-// 		err := action(msg.Context(), orderID)
-// 		if err != nil {
-// 			msg.Nack()
-// 		} else {
-// 			msg.Ack()
-// 		}
-// 	}
-// }
 
 func (ps *PubSub) SendMessages(messages ...Msg) {
 	for _, msg := range messages {
