@@ -6,6 +6,8 @@ import (
 	"tickets/entities"
 	"tickets/message"
 
+	"github.com/ThreeDotsLabs/watermill"
+	waterMessage "github.com/ThreeDotsLabs/watermill/message"
 	"github.com/labstack/echo/v4"
 )
 
@@ -24,9 +26,17 @@ func (h Handler) PostTicketsConfirmation(c echo.Context) error {
 			topic = "TicketBookingCanceled"
 		}
 
+		msg := &waterMessage.Message{
+			UUID:     watermill.NewUUID(),
+			Payload:  castTicketBookingConfirmed(ticket),
+			Metadata: waterMessage.Metadata{},
+		}
+
+		msg.Metadata.Set("correlation_id", c.Request().Header.Get("Correlation-ID"))
+
 		h.pubSub.SendMessages(
 			message.Msg{
-				Payload: castTicketBookingConfirmed(ticket),
+				Message: msg,
 				Topic:   topic,
 			},
 		)
@@ -35,7 +45,7 @@ func (h Handler) PostTicketsConfirmation(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func castTicketBookingConfirmed(ticket entities.TicketStatusRequest) string {
+func castTicketBookingConfirmed(ticket entities.TicketStatusRequest) []byte {
 	structPayload := &entities.TicketBookingConfirmed{
 		Header:        entities.NewEventHeader(),
 		TicketID:      ticket.TicketID,
@@ -44,8 +54,8 @@ func castTicketBookingConfirmed(ticket entities.TicketStatusRequest) string {
 	}
 
 	if payload, err := json.Marshal(structPayload); err != nil {
-		return ticket.TicketID
+		return []byte(ticket.TicketID)
 	} else {
-		return string(payload)
+		return payload
 	}
 }

@@ -7,18 +7,6 @@ import (
 	"tickets/message"
 )
 
-type Task int
-
-const (
-	TaskIssueReceipt Task = iota
-	TaskAppendToTracker
-)
-
-// type Message struct {
-// 	Task     Task
-// 	TicketID string
-// }
-
 type Worker struct {
 	// queue chan Message
 
@@ -49,7 +37,6 @@ func NewWorker(
 }
 
 func (w *Worker) Init() {
-
 	w.pubSub.Subscribe("TicketBookingConfirmed", "issue-receipt", w.HandleReceipt)
 	w.pubSub.Subscribe("TicketBookingConfirmed", "append-to-tracker", w.HandleSpread)
 	w.pubSub.Subscribe("TicketBookingCanceled", "append-to-refund", w.HandleRefound)

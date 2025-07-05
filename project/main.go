@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 
@@ -20,7 +21,12 @@ import (
 func main() {
 	log.Init(slog.LevelInfo)
 
-	apiClients, err := clients.NewClients(os.Getenv("GATEWAY_ADDR"), nil)
+	apiClients, err := clients.NewClients(os.Getenv("GATEWAY_ADDR"),
+		func(ctx context.Context, req *http.Request) error {
+			req.Header.Set("Correlation-ID", log.CorrelationIDFromContext(ctx))
+			return nil
+		},
+	)
 	if err != nil {
 		panic(err)
 	}
